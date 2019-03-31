@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import datetime as dt
+from dateutil import parser
 
 # Python SQL toolkit and Object Relational Mapper
 import sqlalchemy
@@ -26,6 +27,16 @@ Measurement = Base.classes.measurement
 Station = Base.classes.station
 
 session = Session(engine)
+
+# last data point
+lastentry = str(session.query(Measurement.date).order_by(Measurement.date.desc()).first())
+lastentry = lastentry.split(",")[0]
+lastentry = lastentry.replace("(", "")
+lastentry = lastentry.replace(")", "")
+lastentry = lastentry.replace("'", "")
+last_date = parser.parse(lastentry)
+# 1 year ago data point
+last_year = dt.date(last_date.year, last_date.month, last_date.day) - dt.timedelta(days=365)
 
 #################################################
 # Flask Setup
@@ -53,8 +64,6 @@ def welcome():
 @app.route("/api/v1.0/precipitation")
 def precipitation():
     
-    # 1 year ago data point
-    last_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     precipitation_data = session.query(Measurement.date, Measurement.prcp).\
     filter(Measurement.date > last_year).\
     order_by(Measurement.date).all()
@@ -72,7 +81,7 @@ def stations():
 
 @app.route("/api/v1.0/tobs")
 def tobs():
-    last_year = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+    
     temperature_data = session.query(Measurement.station,Measurement.date, Measurement.tobs).\
     filter(Measurement.date > last_year).\
     order_by(Measurement.date).all()
